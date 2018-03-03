@@ -1,0 +1,133 @@
+html, body {
+    height: 100%;
+}
+
+body {
+    padding-top: 55px;
+    display: flex;
+    text-align: center;
+    flex-direction: column;
+}
+
+main {
+    margin: auto;
+    padding: 25px;
+    flex: 1 0 auto;
+    max-width: 750px;
+}
+
+/*footer*/
+
+.copyright {
+    margin: 15px 0;
+}
+
+/*home page*/
+
+.intro {
+    transform: translateY(22vh);
+}
+
+.intro > h1 {
+    color: #333399;
+    font-size: 12vh;
+}
+
+.intro > h2 {
+    color: #333399;
+    font-size: 3vmin;
+}
+
+.intro > .profile {
+    width: 10vh;
+    height: 10vh;
+    border-radius: 50%;
+}
+
+/*apply accent colour to links*/
+
+a:link{
+        color: #333399;
+}
+
+a:visited {
+    /*color: var(--accent);*/
+/*        color: #339966;*/
+        color: #333399;
+}
+
+a.icon:hover {
+    text-decoration: none;
+
+}
+
+a:hover {
+    /*color: var(--accent) !important;*/
+    
+    color: #a0522d !important;
+}
+
+/*paginator at bottom of list view*/
+
+.pages {
+    padding: 15px 0;
+}
+
+.pages-icon {
+    padding: 0 15px;
+}
+
+/*list item for posts and projects*/
+
+.item {
+    padding: 10px 0;
+}
+
+.item-tag {
+    /*background-color: var(--accent);*/
+    background-color: #008ae6;
+}
+
+.item-tag:hover {
+    /*background-color: var(--accent);*/
+    background-color: #a0522d;
+}
+
+.item-tag {
+    /*background-color: var(--accent);*/
+    background-color: #008ae6;
+}
+/*navigation bar icons*/
+
+.navbar-default .navbar-nav{
+color: #000;  /*Sets the text hover color on navbar*/
+}
+
+.navbar-icon {
+    font-size: 125%;
+    display: inline-block !important;
+}
+
+.navbar {
+    font-size: 125%;
+    /*background-color: #ffffff;*/
+    display: inline-block !important;
+}
+
+/*coloured borders at top and bottom of the page*/
+
+.navbar.navbar-default {
+    /*background-color: #008ae6;*/
+    border-bottom: solid 4px #333399;
+
+}
+
+footer {
+    /*border-bottom: solid 4px #333399;*/
+    border-top: solid 1px #333399;
+    background-color: #008ae6;
+}
+
+img {
+    max-width: 100%;
+}
