@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Hugo on Et tout le touDIM</title>
+    <link>/tags/hugo/</link>
+    <description>Recent content in Hugo on Et tout le touDIM</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    
+	<atom:link href="/tags/hugo/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>IPA avec pmeasyr</title>
+      <link>/projets/project1/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/projets/project1/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>
