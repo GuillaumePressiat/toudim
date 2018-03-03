@@ -4,14 +4,13 @@
 
     <div class="intro">
 
-        {{ with .Site.Params.profilePic }} <img class="profile" src="{{ . }}"> {{ end }}
-
+<!--         {{ with .Site.Params.profilePic }} <img class="profile" src="{{ . }}"> {{ end }}
+ -->
+        <h1>{{ markdownify .Site.Params.Description }}</h1>
+        
         <h2>{{ .Site.Title }}</h2>
 
-        <h1>{{ markdownify .Site.Params.Description }}</h1>
 
-		<br>
-        <h4>Bienvenue, ce site rassemble des travaux faits avec R et pmeasyr dans le domaine de l'Information Médicale, à l'AP-HP</h4>
     </div>
 
 </main>

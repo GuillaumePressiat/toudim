@@ -21,30 +21,13 @@
     </item>
     
     <item>
-      <title>IPA avec pmeasyr</title>
-      <link>/2018/03/05/ipa-avec-pmeasyr/</link>
-      <pubDate>Mon, 05 Mar 2018 21:49:57 -0700</pubDate>
-      
-      <guid>/2018/03/05/ipa-avec-pmeasyr/</guid>
-      <description>Cliquer ici pour accéder au document sur les IPA.</description>
-    </item>
-    
-    <item>
       <title>À propos</title>
       <link>/about/</link>
       <pubDate>Mon, 05 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/about/</guid>
-      <description>À propos !</description>
-    </item>
-    
-    <item>
-      <title>Présentation</title>
-      <link>/2018/03/03/pr%C3%A9sentation/</link>
-      <pubDate>Sat, 03 Mar 2018 21:49:57 -0700</pubDate>
-      
-      <guid>/2018/03/03/pr%C3%A9sentation/</guid>
-      <description> Bienvenue </description>
+      <description>Bienvenue,
+Ce site rassemble des travaux faits avec R et pmeasyr dans le domaine de l&amp;rsquo;Information Médicale, à l&amp;rsquo;AP-HP.</description>
     </item>
     
   </channel>
