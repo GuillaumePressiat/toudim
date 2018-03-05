@@ -2,7 +2,7 @@ theme = "minimal"
 baseurl = "/"
 languageCode = "fr-FR"
 title = "Et tout le touDIM"
-ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$", "\\.Rproj"]
 
 
 [permalinks]
@@ -34,7 +34,8 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
     highlightjsCDN = "//cdn.bootcss.com"
     highlightjsLang = ["r", "yaml"]
     highlightjsTheme = "github"
-
+    accent = "cornflowerblue"
+    font = "Raleway" # should match the name on Google Fonts!
     MathJaxCDN = "//cdn.bootcss.com"
     MathJaxVersion = "2.7.1"
 
@@ -44,10 +45,11 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
     height = 50
     alt = "Logo"
 
+
 [[menu.icon]]
-    url = "mailto:me@example.com"
-    name = "envelope-o"
-    weight = 1
+    url = "https://github.com/GuillaumePressiat/toudim/tree/master/public/methodes"
+    name = "file-code-o"
+    weight = 2
 
 [[menu.icon]]
     url = "https://github.com/IM-APHP/"

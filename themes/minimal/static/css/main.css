@@ -47,13 +47,14 @@ main {
 /*apply accent colour to links*/
 
 a:link{
-        color: #333399;
+        /*color: #333399;*/
+        color: var(--accent);
 }
 
 a:visited {
     /*color: var(--accent);*/
 /*        color: #339966;*/
-        color: #333399;
+        color: var(--accent) ;
 }
 
 a.icon:hover {
@@ -85,7 +86,7 @@ a:hover {
 
 .item-tag {
     /*background-color: var(--accent);*/
-    background-color: #008ae6;
+    background-color: var(--accent);
 }
 
 .item-tag:hover {
@@ -94,8 +95,8 @@ a:hover {
 }
 
 .item-tag {
-    /*background-color: var(--accent);*/
     background-color: #008ae6;
+    /*background-color: var(--accent);*/
 }
 /*navigation bar icons*/
 
@@ -126,6 +127,7 @@ footer {
     /*border-bottom: solid 4px #333399;*/
     border-top: solid 1px #333399;
     background-color: #008ae6;
+  
 }
 
 img {

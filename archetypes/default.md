@@ -1,6 +1,6 @@
 ---
 title: "{{ replace .TranslationBaseName "-" " " | title }}"
-date: {{ dateFormat "01-02-2016" }}
+date: {{ dateFormat "2016-03-05" }}
 draft: true
 ---
 
