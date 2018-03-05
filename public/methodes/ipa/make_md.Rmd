@@ -1,0 +1,623 @@
+---
+title: "IPA avec pmeasyr"
+date: "`r Sys.Date()`"
+author: Simap AP-HP
+output:
+  rmdformats::readthedown:
+    highlight: tango
+    code_folding: hide
+---
+
+
+# Introduction
+
+## Contexte
+
+L'ATIH met à disposition sur son [site](https://www.atih.sante.fr/indicateurs-de-pilotage-de-l-activite-ipa) une notice avec annexes permettant de comprendre et de reproduire la méthode des indicateurs de pilotage de l'activité (IPA).
+On propose ici de reproduire la méthode à partir des données PMSI importées dans R avec [pmeasyr](https://guillaumepressiat.github.io/). Pourquoi ? 
+
+- Reproduire une méthode permet de bien la comprendre et de l'évaluer
+- La classification des séjours est disponible au niveau séjour : un niveau plus fin que le niveau agrégé du tableau epmsi [1.D.2.IPA] (on peut distrubuer cette classification au niveau des RUM par exemple...) ou rattacher la valorisation des séjours correspondants, si l'on veut
+- Cette méthode montre ce qu'il est possible de faire comme étude avec R et pmeasyr, c'est un premier travail pour promouvoir le partage de méthodes autour du PMSI avec R
+- même si la documentation de l'ATIH est très complète, trois personnes essayant de la reproduire aboutiront certainement à trois résultats différents de celui d'epmsi : il est donc intéressant de partager pour pouvoir progresser
+- partager la méthode sous forme d'un algorithme et de tableaux (liste de codes actes sous forme csv et non pdf) permet d'éviter les imprécisions d'une méthode manuscrite.
+
+**N.B. : Dans les résultats présentés ici tous les effectifs résultats ont été mis à 1.**
+
+## Pré-requis
+
+### Installation de pmeasyr
+
+Une page de présentation est disponible [ici](https://guillaumepressiat.github.io/), elle permet de débuter et de poursuivre dans l'utilisation de R pour le PMSI. Le répertoire contenant le code du package est [là](https://github.com/IM-APHP/pmeasyr).
+
+La stricte commande d'installation du package dans R est la suivante : 
+
+```{r eval = F}
+devtools::install_github('IM-APHP/pmeasyr')
+```
+
+### Récupération des annexes des notices IPA
+
+Un répertoire Github permet de récupérer automatiquement les listes d'actes sous forme de csv à partir des annexes pdf de l'ATIH. Voici le [lien de ce projet](https://github.com/GuillaumePressiat/scrapatih/). 
+
+
+```{r knitr_init, include = F}
+## Global options
+options(max.print="75")
+knitr::opts_chunk$set(echo=TRUE, eval = TRUE,
+               message=FALSE,
+               warning=FALSE)
+an = 17
+library(dplyr)
+library(pmeasyr)
+dtttable <- function(x, n = 12) DT::datatable(x, extensions = 'Buttons', options = list(
+      #pageLength = nrow(df2()),
+      pageLength = n,
+      dom = 'Bfrtip',
+      buttons = c('copy', 'csv', 'excel', 'colvis')), rownames = F)
+```
+
+
+## Définition des groupes
+
+```{r}
+classes_ipa <- tibble::tribble(
+  ~ var, ~ libelle,
+  "groupe_a_1",   "Diagnostic prénatal",
+  "groupe_a_2",   "Obstétrique",
+  "groupe_a_3",   "Néonatologie et Réanimation Néonatale",
+  "groupe_a_4",   "Activités cliniques d’assistance médicale à la procréation",
+  "groupe_b_1",   "Greffes d’organes et de cellules hématopoïétiques",
+  "groupe_b_2",   "Neurochirurgie",
+  "groupe_b_3",   "Chirurgie cardiaque",
+  "groupe_b_4",   "Grands brûlés",
+  "groupe_b_5",   "Neuroradiologie interventionnelle",
+  "groupe_c_71",  "Traitement du cancer : Chirurgie (séjours)",
+  "groupe_c_72",  "Traitement du cancer : Chimiothérapie (séjours)",
+  "groupe_c_73",  "Traitement du cancer : Chimiothérapie (séances)",
+  "groupe_c_74",  "Traitement du cancer : Radiothérapie (séjours) ",
+  "groupe_c_75",  "Traitement du cancer : Radiothérapie (séances)",
+  "groupe_c_76",  "Cardiologie interventionnelle",
+  "groupe_c_81",  "Dialyses : Activités dans le champ IPA",
+  "groupe_c_82",  "Dialyses : Activités hors champ IPA",
+  "groupe_d_091", "Activité interventionnelle (séjours)",
+  "groupe_d_092", "Médecine hospitalisation partielle (séances)",
+  "groupe_d_093", "Médecine hospitalisation partielle (séjours)",
+  "groupe_d_094", "Médecine hospitalisation complète (séjours)",
+  "groupe_d_101", "Chirurgie ambulatoire hors transferts, mutations ou décès",
+  "groupe_d_102", "Chirurgie  en  hospitalisation  complète ou  sans  nuitée  avec  transfert,  mutation  ou décès"
+)
+
+```
+
+## Import des annexes 
+
+```{r eval = TRUE}
+
+annexes <- 11:17 %>% purrr::map(function(an){
+  readr::read_delim("P:\\Commun\\ipa_cc\\withr\\tools\\annexes_ipa_20" %+% an %+% ".csv", col_types = readr::cols(
+  liste = readr::col_character(),
+  titre = readr::col_character()), delim = ";") %>% 
+    mutate(anseqta = 2000 + an)
+}) %>% 
+  bind_rows()
+
+dtttable(annexes)
+```
+
+
+**Ce document concerne les données AP-HP `r 2000 + an`.**
+
+
+# Méthode et résultats avec MonetDBLite
+
+
+## Accès aux données
+
+Dans cet exemple les données sont stockées dans une base de données MonetDBLite. Cette intégration en base de données peut se faire avec `pmeasyr` et permet de ne pas réimporter les données à chaque fois. Les exécutions sont alors plus rapides. Consulter par exemple cette [page](https://guillaumepressiat.github.io/blog/2017/09/db) pour reproduire la méthode.
+
+Autrement, vous pouvez plus directement utiliser la fonction `irsa()` pour importer les rsa et appliquer la méthode des IPA, voir [section suivante](#methode-et-resultats-avec-pmeasyr-seulement).
+
+
+```{r eval = T}
+library(MonetDBLite)
+library(DBI)
+library(dbplyr)
+library(dplyr, warn.conflicts = F)
+dbdir <- "~/Documents/data/monetdb"
+con <- src_monetdblite(dbdir)
+library(pmeasyr)
+```
+
+
+## Séjours exclus
+
+```{r}
+
+# 0 : Groupe des séjours "exclus"
+
+g0_i <- tbl_mco(con, an, 'rsa_rsa') %>% 
+  filter(rsacmd == '90' |
+         typesej == 'B' |
+         ghm %in% c('15Z10E', '14Z08Z', '09Z02A', '09Z02B', '23Z03Z')  | # | ,, 
+         (ghm == '22Z03Z' & !(dp %in% c('L5120', 'T3131', 'T3141', 'T3151', 'T316', 'T317', 'T318', 'T319', 'T323', 'T324', 'T325', 'T326', 'T327', 'T328', 'T329')))
+           # substr(ghm,1,5) %in% c('28Z01', '28Z02', '28Z03')  |
+         #(substr(ghm,1,5) == '28Z04' & noghs == '9617')  #|
+         #  (echpmsi == '8' & prov == '5' & nbrum == 1)
+         ) %>% 
+  select(cle_rsa)
+
+# count(g0_i)
+# tbl_mco(con, an, 'rsa_rsa') %>% count()
+g0_ii <- tbl_mco(con, an, 'rsa_um') %>% 
+  filter(typaut1 %like% '07%') %>% 
+  select(cle_rsa) %>% 
+  semi_join(tbl_mco(con, an, 'rsa_rsa') %>% 
+               filter(nbrum == 1), by = 'cle_rsa')
+
+# count(g0_ii)  
+ 
+g0 <- collect(union_all(g0_i, g0_ii)) %>% 
+  distinct(cle_rsa)
+
+
+```
+
+<!-- `r nrow(g0)` séjours exclus. -->
+
+Reproduire la méthode nous permet de calculer combien de séjours sont exclus.
+
+## Groupe A : Activités autorisées dans le champ obstétrique / néonatologie
+
+```{r}
+gA <- tbl_mco(con, an, 'rsa_rsa') %>% 
+  select(cle_rsa, dp, rsacmd, nbsupnn1, nbsupnn2, nbsupnn3) %>% 
+  mutate(
+    groupe_a_1 = (substr(dp, 1,3) == 'Z36'),
+    groupe_a_2 = (rsacmd == '14'),
+    groupe_a_3 = (rsacmd == '15' | (nbsupnn1 + nbsupnn2 + nbsupnn3 > 0)),
+    groupe_a_4 = (substr(dp, 1,3) == 'Z31')
+    ) %>% 
+  filter((groupe_a_1 + groupe_a_2 + groupe_a_3 + groupe_a_4) > 0) %>% 
+  collect() %>% 
+  select(cle_rsa, starts_with('groupe_a'))
+
+# count(gA)
+gA %>% 
+  anti_join(g0, by = "cle_rsa") %>% 
+  tidyr::gather(var, val, - cle_rsa) %>% 
+  filter(val > 0) %>% 
+  arrange(cle_rsa, var) %>% 
+  distinct(.keep_all = T) %>% 
+  left_join(classes_ipa, by = 'var') %>% 
+  count(var, libelle)  %>% 
+  mutate(n = 1) %>% 
+  knitr::kable()
+```
+
+
+## Groupe B : Activités autorisées SIOS
+
+```{r}
+
+gB_i <- tbl_mco(con, an, 'rsa_rsa') %>% 
+  select(cle_rsa, rsacmd, ghm, dp) %>% 
+  mutate(
+    groupe_b_1 = (rsacmd == '27'),
+    groupe_b_3 = (substr(ghm,1,5) %in% c('05C02', '05C03', '05C04', '05C05', '05C06', '05C07', '05C08', '05C09')), 
+    groupe_b_4 = (substr(ghm,1,5) == '22Z02'  | (ghm == '22Z03Z' &
+           dp %in% c('L5120', 'T3131', 'T3141', 'T3151', 'T316', 'T317', 'T318', 'T319', 'T323', 'T324', 'T325', 'T326', 'T327', 'T328', 'T329')))
+  ) %>% 
+  filter((groupe_b_1 + groupe_b_3 + groupe_b_4) > 0) %>% 
+  collect() %>% 
+  select(cle_rsa,ghm, starts_with('groupe_b'))
+
+# count(gB_i, groupe_b_4)
+
+# gB_i %>% anti_join(gA) %>% count(groupe_b_3)
+
+
+a033 <- readr::read_csv2('P:\\Commun\\ipa_cc\\withr\\tools\\a_033.csv', col_types = readr::cols(
+  acte = readr::col_character(),
+  phase = readr::col_character()
+))
+
+temp <- tbl_mco(con, an, 'rsa_actes') %>% 
+  semi_join(a033, by = c('cdccam' = 'acte'), copy = TRUE) %>% # , 'phase' = 'phase'
+  distinct(cle_rsa) %>% 
+  collect()
+
+escape_06 <- gB_i %>% filter(groupe_b_3 == 1) %>% 
+  inner_join(temp, by = 'cle_rsa')
+
+gB_i <- gB_i %>% 
+  anti_join(escape_06, by = c('cle_rsa', 'groupe_b_3'))
+
+# count(gB_i, groupe_b_3)
+
+nri_a <- annexes %>% 
+  filter(grepl('radiologie', titre)) %>% 
+  distinct(liste, anseqta)
+
+nri <- tbl_mco(con, an, 'rsa_actes') %>% 
+  inner_join(tbl_mco(con, an, 'rsa_rsa') %>% 
+               mutate(anseqta = ifelse(moissor<"03", 2000 + an - 1, 2000 + an)) %>% 
+               select(cle_rsa, anseqta), by = 'cle_rsa') %>% 
+  inner_join(nri_a, by = c('cdccam' = 'liste', 'anseqta' = 'anseqta'), copy = TRUE) %>% 
+  distinct(cle_rsa) %>% 
+  mutate(groupe_b_5 = 1 ) %>% 
+  collect()
+
+nch_a <- annexes %>% 
+  filter(grepl('chirurgie', titre)) %>% 
+  distinct(liste, anseqta)
+
+
+nch <- tbl_mco(con, an, 'rsa_actes') %>% 
+    inner_join(tbl_mco(con, an, 'rsa_rsa') %>% 
+               mutate(anseqta = ifelse(moissor<"03", 2000 + an - 1, 2000 + an)) %>% 
+               select(cle_rsa, anseqta), by = 'cle_rsa') %>% 
+  inner_join(nch_a, by = c('cdccam' = 'liste', 'anseqta' = 'anseqta'), copy = TRUE) %>% 
+  distinct(cle_rsa) %>% 
+  mutate(groupe_b_2 = 1 ) %>% 
+  collect()
+
+
+gB <- bind_rows(gB_i, nri, nch)
+
+gB[is.na(gB)] <- FALSE
+gB %>%
+  anti_join(bind_rows(gA, g0)) %>% 
+  select(-ghm) %>%
+  tidyr::gather(var, val, - cle_rsa) %>% 
+  filter(val > 0) %>% 
+  arrange(cle_rsa, var) %>% 
+  distinct(.keep_all = T)  %>% 
+  left_join(classes_ipa, by = 'var') %>% 
+  count(var, libelle)  %>% 
+  mutate(n = 1) %>% 
+  knitr::kable()
+
+```
+
+
+## Groupe C : Autres activités autorisées de médecine et chirurgie spécialisées
+
+```{r}
+
+
+car_a <- annexes %>% 
+  filter(grepl('cardio', titre)) %>% 
+  distinct(liste, anseqta)
+
+car <- tbl_mco(con, an, 'rsa_actes') %>% 
+  inner_join(tbl_mco(con, an, 'rsa_rsa') %>% 
+               mutate(anseqta = ifelse(moissor<"03", 2000 + an - 1, 2000 + an)) %>% 
+               select(cle_rsa, anseqta), by = 'cle_rsa') %>% 
+  inner_join(car_a, by = c('cdccam' = 'liste', 'anseqta' = 'anseqta'), copy = TRUE) %>% 
+  distinct(cle_rsa) %>% 
+  mutate(groupe_c_76 = 1) %>% 
+  collect()
+
+gC_i <- tbl_mco(con, an, 'rsa_rsa') %>% 
+  select(cle_rsa, rsacmd,rsatype, ghm,noghs, dp, dr) %>% 
+  mutate(groupe_c_71 = (rsatype == 'C' & (('C00' <= dp & dp < 'C98') | ('D00' <= dp & dp < 'D10') | ('D37' <= dp & dp < 'D49'))),
+         groupe_c_72 = (substr(ghm,1,5) %in% c('17M05', '17M06')),
+         groupe_c_73 = (substr(ghm,1,5) == '28Z07'),
+         groupe_c_74 = (substr(ghm,1,5) %in% c('17K04', '17K05', '17K08', '17K09') & dp %in% c('Z5100', 'Z5101') & (('C00' <= dr & dr < 'C98') | ('D00' <= dr & dr < 'D10') | ('D37' <= dr & dr < 'D49'))),
+         groupe_c_75 = (substr(ghm,1,5) %in% c('28Z10', '28Z11', '28Z18', '28Z19', '28Z20', '28Z21', '28Z22', '28Z23', '28Z24', '28Z25') & dp %in% c('Z5100', 'Z5101') & (('C00' <= dr & dr < 'C98') | ('D00' <= dr & dr < 'D10') | ('D37' <= dr & dr < 'D49'))),
+         
+         groupe_c_81 = (ghm == '28Z04Z' & noghs == '9605'),
+         groupe_c_82 = ((ghm == '28Z04Z' & noghs %in% c('9617', '9999')) | (substr(ghm,1,5) %in% c('28Z01', '28Z02', '28Z03')))) %>% 
+  filter(groupe_c_71 + groupe_c_72 + groupe_c_73 + groupe_c_74 + groupe_c_75 + groupe_c_81 + groupe_c_82 > 0) %>% 
+  collect() %>% 
+  select(cle_rsa, starts_with('groupe_c'))
+
+
+gC <- bind_rows(gC_i, car)
+
+gC %>% 
+  anti_join(bind_rows(g0, gA)) %>% #gB 
+  tidyr::gather(var, val, - cle_rsa) %>% 
+  filter(val > 0) %>% 
+  arrange(cle_rsa, var) %>% 
+  distinct(.keep_all = T)  %>% 
+  left_join(classes_ipa, by = 'var') %>% 
+  count(var, libelle)  %>% 
+  mutate(n = 1) %>% 
+  knitr::kable()
+
+```
+
+
+## Groupe D : Médecine et chirurgie (autres)
+
+```{r}
+
+gD_i <- tbl_mco(con, an, 'rsa_rsa') %>% 
+  #filter(rsatype %in% c('M', 'K', 'Z')) %>% 
+  select(cle_rsa, rsacmd, rsatype, ghm, noghs, dp, dr, schpmsi, dest, duree) %>% 
+  collect() %>% 
+  mutate(sd = paste0(schpmsi,".", dest)) %>% 
+  mutate(duree = ifelse(substr(ghm,1,3) == '28Z', 0, duree)) %>% 
+  mutate(groupe_d_091 = (rsatype == 'K'),
+         groupe_d_092 = ((ghm %in% c('28Z14Z', '28Z15Z', '28Z16Z', '28Z17Z')) | 
+                           ((substr(ghm,1,5) %in% c('28Z10', '28Z11', '28Z18', '28Z19', '28Z20', '28Z21', '28Z22', '28Z23', '28Z24', '28Z25') & 
+                               dp %in% c('Z5100', 'Z5101') & !(('C00' <= dr & dr < 'C98') | ('D00' <= dr & dr < 'D10') | ('D37' <= dr & dr < 'D49'))))),
+         
+         groupe_d_093 = ((rsatype %in% c('M') |  (rsacmd != '28' & rsatype %in% c('Z'))) & duree == 0), # (rsatype %in% c('M',  'Z') & substr(ghm,6,6) %in% c('T')) |
+         groupe_d_094 = (duree > 0 & !(rsatype %in% c('K', 'C'))),
+         
+         groupe_d_101 = (rsatype == 'C' & duree == 0 & !(sd %in% c('7.6', '7.2', '7.4', '6.6', ' 6.2', '6.4', '9.'))),
+         groupe_d_102 = (rsatype == 'C' & !(duree == 0  & !(sd %in% c('7.6', '7.2', '7.4', '6.6', ' 6.2', '6.4', '9.'))))) %>% 
+  filter(groupe_d_091 + groupe_d_092 + groupe_d_093 + groupe_d_094 + groupe_d_101 + groupe_d_102 > 0)
+
+
+gD_i %>% 
+  anti_join(bind_rows(g0, gA, gB, gC), by = 'cle_rsa') %>% #gB 
+  select(cle_rsa, starts_with('groupe_')) %>% 
+  tidyr::gather(var, val, - cle_rsa) %>% 
+  filter(val > 0) %>% 
+  arrange(cle_rsa, var) %>% 
+  distinct(.keep_all = T) %>% 
+  left_join(classes_ipa, by = 'var') %>% 
+  count(var, libelle)  %>% 
+  mutate(n = 1) %>% 
+  knitr::kable()
+
+```
+
+# Méthode et résultats avec pmeasyr seulement
+
+
+## Accès aux données
+
+Dans cet exemple les données sont importées dans R. 
+
+
+```{r eval = T}
+library(dplyr, warn.conflicts = F)
+library(pmeasyr)
+
+p <- noyau_pmeasyr(finess = '750712184', 
+                   annee = 2017, 
+                   mois = 12, 
+                   path   = '~/Documents/data/mco/',
+                   n_max = 2e5, 
+                   tolower_names = TRUE)
+
+rsa <- irsa(p)
+```
+
+
+## Séjours exclus
+
+```{r}
+
+# 0 : Groupe des séjours "exclus"
+
+g0_i <- rsa$rsa %>% 
+  filter(rsacmd == '90' |
+         typesej == 'B' |
+         ghm %in% c('15Z10E', '14Z08Z', '09Z02A', '09Z02B', '23Z03Z')  | # | ,, 
+         (ghm == '22Z03Z' & !(dp %in% c('L5120', 'T3131', 'T3141', 'T3151', 'T316', 'T317', 'T318', 'T319', 'T323', 'T324', 'T325', 'T326', 'T327', 'T328', 'T329')))
+           # substr(ghm,1,5) %in% c('28Z01', '28Z02', '28Z03')  |
+         #(substr(ghm,1,5) == '28Z04' & noghs == '9617')  #|
+         #  (echpmsi == '8' & prov == '5' & nbrum == 1)
+         ) %>% 
+  select(cle_rsa)
+
+# count(g0_i)
+# tbl_mco(con, an, 'rsa_rsa') %>% count()
+g0_ii <- rsa$rsa_um %>% 
+  filter(substr(typaut1,1,2) == '07') %>% 
+  select(cle_rsa) %>% 
+  semi_join(rsa$rsa %>% 
+               filter(nbrum == 1), by = 'cle_rsa')
+
+# count(g0_ii)  
+ 
+g0 <- bind_rows(g0_i, g0_ii) %>% 
+  distinct(cle_rsa)
+
+
+```
+
+<!-- `r nrow(g0)` séjours exclus. -->
+
+Reproduire la méthode nous permet de calculer combien de séjours sont exclus.
+
+## Groupe A : Activités autorisées dans le champ obstétrique / néonatologie
+
+```{r}
+gA <- rsa$rsa %>% 
+  select(cle_rsa, dp, rsacmd, nbsupnn1, nbsupnn2, nbsupnn3) %>% 
+  mutate(
+    groupe_a_1 = (substr(dp, 1,3) == 'Z36'),
+    groupe_a_2 = (rsacmd == '14'),
+    groupe_a_3 = (rsacmd == '15' | (nbsupnn1 + nbsupnn2 + nbsupnn3 > 0)),
+    groupe_a_4 = (substr(dp, 1,3) == 'Z31')
+    ) %>% 
+  filter((groupe_a_1 + groupe_a_2 + groupe_a_3 + groupe_a_4) > 0) %>% 
+  select(cle_rsa, starts_with('groupe_a'))
+
+# count(gA)
+gA %>% 
+  anti_join(g0, by = "cle_rsa") %>% 
+  tidyr::gather(var, val, - cle_rsa) %>% 
+  filter(val > 0) %>% 
+  arrange(cle_rsa, var) %>% 
+  distinct(.keep_all = T) %>% 
+  left_join(classes_ipa, by = 'var') %>% 
+  count(var, libelle)  %>% 
+  mutate(n = 1) %>% 
+  knitr::kable()
+```
+
+
+## Groupe B : Activités autorisées SIOS
+
+```{r}
+
+gB_i <- rsa$rsa %>% 
+  select(cle_rsa, rsacmd, ghm, dp) %>% 
+  mutate(
+    groupe_b_1 = (rsacmd == '27'),
+    groupe_b_3 = (substr(ghm,1,5) %in% c('05C02', '05C03', '05C04', '05C05', '05C06', '05C07', '05C08', '05C09')), 
+    groupe_b_4 = (substr(ghm,1,5) == '22Z02'  | (ghm == '22Z03Z' &
+           dp %in% c('L5120', 'T3131', 'T3141', 'T3151', 'T316', 'T317', 'T318', 'T319', 'T323', 'T324', 'T325', 'T326', 'T327', 'T328', 'T329')))
+  ) %>% 
+  filter((groupe_b_1 + groupe_b_3 + groupe_b_4) > 0) %>% 
+  collect() %>% 
+  select(cle_rsa,ghm, starts_with('groupe_b'))
+
+# count(gB_i, groupe_b_4)
+
+# gB_i %>% anti_join(gA) %>% count(groupe_b_3)
+
+
+a033 <- readr::read_csv2('P:\\Commun\\ipa_cc\\withr\\tools\\a_033.csv', col_types = readr::cols(
+  acte = readr::col_character(),
+  phase = readr::col_character()
+))
+
+temp <- rsa$actes %>% 
+  semi_join(a033, by = c('cdccam' = 'acte')) %>%
+  distinct(cle_rsa) %>% 
+  collect()
+
+escape_06 <- gB_i %>% filter(groupe_b_3 == 1) %>% 
+  inner_join(temp, by = 'cle_rsa')
+
+gB_i <- gB_i %>% 
+  anti_join(escape_06, by = c('cle_rsa', 'groupe_b_3'))
+
+# count(gB_i, groupe_b_3)
+
+nri_a <- annexes %>% 
+  filter(grepl('radiologie', titre)) %>% 
+  distinct(liste, anseqta)
+
+nri <- rsa$actes %>% 
+  inner_join(rsa$rsa %>% 
+               mutate(anseqta = ifelse(moissor<"03", 2000 + an - 1, 2000 + an)) %>% 
+               select(cle_rsa, anseqta), by = 'cle_rsa') %>% 
+  inner_join(nri_a, by = c('cdccam' = 'liste', 'anseqta' = 'anseqta'), copy = TRUE) %>% 
+  distinct(cle_rsa) %>% 
+  mutate(groupe_b_5 = 1 )
+
+nch_a <- annexes %>% 
+  filter(grepl('chirurgie', titre)) %>% 
+  distinct(liste, anseqta)
+
+
+nch <- rsa$actes %>% 
+    inner_join(rsa$rsa %>% 
+               mutate(anseqta = ifelse(moissor<"03", 2000 + an - 1, 2000 + an)) %>% 
+               select(cle_rsa, anseqta), by = 'cle_rsa') %>% 
+  inner_join(nch_a, by = c('cdccam' = 'liste', 'anseqta' = 'anseqta'), copy = TRUE) %>% 
+  distinct(cle_rsa) %>% 
+  mutate(groupe_b_2 = 1 )
+
+
+gB <- bind_rows(gB_i, nri, nch)
+
+gB[is.na(gB)] <- FALSE
+gB %>%
+  anti_join(bind_rows(gA, g0)) %>% 
+  select(-ghm) %>%
+  tidyr::gather(var, val, - cle_rsa) %>% 
+  filter(val > 0) %>% 
+  arrange(cle_rsa, var) %>% 
+  distinct(.keep_all = T)  %>% 
+  left_join(classes_ipa, by = 'var') %>% 
+  count(var, libelle)  %>% 
+  mutate(n = 1) %>% 
+  knitr::kable()
+
+```
+
+
+## Groupe C : Autres activités autorisées de médecine et chirurgie spécialisées
+
+```{r}
+
+
+car_a <- annexes %>% 
+  filter(grepl('cardio', titre)) %>% 
+  distinct(liste, anseqta)
+
+car <- rsa$actes %>% 
+  inner_join(rsa$rsa %>% 
+               mutate(anseqta = ifelse(moissor<"03", 2000 + an - 1, 2000 + an)) %>% 
+               select(cle_rsa, anseqta), by = 'cle_rsa') %>% 
+  inner_join(car_a, by = c('cdccam' = 'liste', 'anseqta' = 'anseqta'), copy = TRUE) %>% 
+  distinct(cle_rsa) %>% 
+  mutate(groupe_c_76 = 1)
+
+gC_i <- rsa$rsa %>% 
+  select(cle_rsa, rsacmd,rsatype, ghm,noghs, dp, dr) %>% 
+  mutate(groupe_c_71 = (rsatype == 'C' & (('C00' <= dp & dp < 'C98') | ('D00' <= dp & dp < 'D10') | ('D37' <= dp & dp < 'D49'))),
+         groupe_c_72 = (substr(ghm,1,5) %in% c('17M05', '17M06')),
+         groupe_c_73 = (substr(ghm,1,5) == '28Z07'),
+         groupe_c_74 = (substr(ghm,1,5) %in% c('17K04', '17K05', '17K08', '17K09') & dp %in% c('Z5100', 'Z5101') & (('C00' <= dr & dr < 'C98') | ('D00' <= dr & dr < 'D10') | ('D37' <= dr & dr < 'D49'))),
+         groupe_c_75 = (substr(ghm,1,5) %in% c('28Z10', '28Z11', '28Z18', '28Z19', '28Z20', '28Z21', '28Z22', '28Z23', '28Z24', '28Z25') & dp %in% c('Z5100', 'Z5101') & (('C00' <= dr & dr < 'C98') | ('D00' <= dr & dr < 'D10') | ('D37' <= dr & dr < 'D49'))),
+         
+         groupe_c_81 = (ghm == '28Z04Z' & noghs == '9605'),
+         groupe_c_82 = ((ghm == '28Z04Z' & noghs %in% c('9617', '9999')) | (substr(ghm,1,5) %in% c('28Z01', '28Z02', '28Z03')))) %>% 
+  filter(groupe_c_71 + groupe_c_72 + groupe_c_73 + groupe_c_74 + groupe_c_75 + groupe_c_81 + groupe_c_82 > 0) %>% 
+  select(cle_rsa, starts_with('groupe_c'))
+
+
+gC <- bind_rows(gC_i, car)
+
+gC %>% 
+  anti_join(bind_rows(g0, gA)) %>% #gB 
+  tidyr::gather(var, val, - cle_rsa) %>% 
+  filter(val > 0) %>% 
+  arrange(cle_rsa, var) %>% 
+  distinct(.keep_all = T)  %>% 
+  left_join(classes_ipa, by = 'var') %>% 
+  count(var, libelle)  %>% 
+  mutate(n = 1) %>% 
+  knitr::kable()
+
+```
+
+
+## Groupe D : Médecine et chirurgie (autres)
+
+```{r}
+
+gD_i <- rsa$rsa %>% 
+  #filter(rsatype %in% c('M', 'K', 'Z')) %>% 
+  select(cle_rsa, rsacmd, rsatype, ghm, noghs, dp, dr, schpmsi, dest, duree) %>% 
+  mutate(sd = paste0(schpmsi,".", dest)) %>% 
+  mutate(duree = ifelse(substr(ghm,1,3) == '28Z', 0, duree)) %>% 
+  mutate(groupe_d_091 = (rsatype == 'K'),
+         groupe_d_092 = ((ghm %in% c('28Z14Z', '28Z15Z', '28Z16Z', '28Z17Z')) | 
+                           ((substr(ghm,1,5) %in% c('28Z10', '28Z11', '28Z18', '28Z19', '28Z20', '28Z21', '28Z22', '28Z23', '28Z24', '28Z25') & 
+                               dp %in% c('Z5100', 'Z5101') & !(('C00' <= dr & dr < 'C98') | ('D00' <= dr & dr < 'D10') | ('D37' <= dr & dr < 'D49'))))),
+         
+         groupe_d_093 = ((rsatype %in% c('M') |  (rsacmd != '28' & rsatype %in% c('Z'))) & duree == 0), # (rsatype %in% c('M',  'Z') & substr(ghm,6,6) %in% c('T')) |
+         groupe_d_094 = (duree > 0 & !(rsatype %in% c('K', 'C'))),
+         
+         groupe_d_101 = (rsatype == 'C' & duree == 0 & !(sd %in% c('7.6', '7.2', '7.4', '6.6', ' 6.2', '6.4', '9.'))),
+         groupe_d_102 = (rsatype == 'C' & !(duree == 0  & !(sd %in% c('7.6', '7.2', '7.4', '6.6', ' 6.2', '6.4', '9.'))))) %>% 
+  filter(groupe_d_091 + groupe_d_092 + groupe_d_093 + groupe_d_094 + groupe_d_101 + groupe_d_102 > 0)
+
+
+gD_i %>% 
+  anti_join(bind_rows(g0, gA, gB, gC), by = 'cle_rsa') %>% #gB 
+  select(cle_rsa, starts_with('groupe_')) %>% 
+  tidyr::gather(var, val, - cle_rsa) %>% 
+  filter(val > 0) %>% 
+  arrange(cle_rsa, var) %>% 
+  distinct(.keep_all = T) %>% 
+  left_join(classes_ipa, by = 'var') %>% 
+  count(var, libelle)  %>% 
+  mutate(n = 1) %>% 
+  knitr::kable()
+
+```
+
