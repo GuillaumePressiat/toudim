@@ -71,7 +71,7 @@ a:hover {
 /*paginator at bottom of list view*/
 
 .pages {
-    padding: 15px 0;
+    padding: 5px 0;
 }
 
 .pages-icon {
@@ -81,7 +81,7 @@ a:hover {
 /*list item for posts and projects*/
 
 .item {
-    padding: 10px 0;
+    padding: 5px 0;
 }
 
 .item-tag {

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Projets on Et tout le touDIM</title>
-    <link>/projets/</link>
-    <description>Recent content in Projets on Et tout le touDIM</description>
+    <title>Dgos on Et tout le touDIM</title>
+    <link>/tags/dgos/</link>
+    <description>Recent content in Dgos on Et tout le touDIM</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fr-FR</language>
     <lastBuildDate>Tue, 06 Mar 2018 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="/projets/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/tags/dgos/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
@@ -17,15 +17,6 @@
       <pubDate>Tue, 06 Mar 2018 00:00:00 +0000</pubDate>
       
       <guid>/projets/002---re/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>IPA avec pmeasyr</title>
-      <link>/projets/001---ipa/</link>
-      <pubDate>Mon, 05 Mar 2018 00:00:00 +0000</pubDate>
-      
-      <guid>/projets/001---ipa/</guid>
       <description></description>
     </item>
     
