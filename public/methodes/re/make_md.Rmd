@@ -1,0 +1,147 @@
+---
+title: "Recours Exceptionnel avec pmeasyr"
+date: "`r Sys.Date()`"
+author: Simap - DOMU / AP-HP
+output:
+  rmdformats::readthedown:
+    highlight: tango
+---
+
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+
+## Global options
+options(max.print="75")
+knitr::opts_chunk$set(echo=TRUE,
+               message=FALSE,
+               warning=FALSE)
+knitr::opts_knit$set(width=75)
+```
+
+# Introduction
+
+## Contexte
+
+Pouvoir identifier les séjours du recours exceptionnel peut être utile pour les DIM des hôpitaux, ce notebook propose une méthode pour cela utilisant [pmeasyr](https://guillaumepressiat.github.io/). Un fichier `json` référençant les listes du recours exceptionnel définies par la DGOS est utilisé et est accessible dans le [répertoire](https://github.com/GuillaumePressiat/toudim/tree/master/public/methodes) de ce projet.
+
+## Principe du projet
+
+Dans ce notebook, on distingue la partie contenant les listes de codes définissant les requêtes (fichiers en annexes au format `json`) du programme qui exécute les requêtes (ce notebook). Cette structuration présente l'avantage de séparer les aspects programmation de la méthode : la méthode peut évoluer sans avoir à modifier le programme, ce qui est plutôt sécurisant.
+
+**N.B.: Lorsque la définition de certains recours sera mise à jour par la DGOS ou que de nouveaux recours seront ajoutés il faudra naturellement mettre à jour les fichiers json correspondants mais le programme restera a priori inchangé.**
+
+## Pré-requis
+
+### Installation de pmeasyr
+
+Une page de présentation est disponible [ici](https://guillaumepressiat.github.io/), elle permet de débuter et de poursuivre dans l'utilisation de R pour le PMSI. Le répertoire contenant le code du package est [là](https://github.com/IM-APHP/pmeasyr).
+
+La stricte commande d'installation du package dans R est la suivante : 
+
+```{r eval = F}
+devtools::install_github('IM-APHP/pmeasyr')
+```
+
+## Définition des recours exceptionnels
+
+```{r}
+library(dplyr, warn.conflicts = FALSE)
+library(pmeasyr)
+
+# On liste les requêtes
+fichiers_listes <- list.files('tools')
+
+# On crée un objet contenant toutes les listes de requêtes (une liste de listes)
+listes_re <- 'tools/' %+% 
+  fichiers_listes %>% 
+  purrr::map(jsonlite::read_json, simplifyVector = TRUE)
+
+
+listviewer::jsonedit(listes_re, mode = "code")
+```
+
+<br>
+
+Dans l'outil de visualisation des requêtes ci-dessus, vous pouvez sélectionner différents modes permettant de voir les codes PMSI (codes CCAM, CIM-10, GHM) et âges des patients, et de rechercher un recours en particulier.
+
+# Méthode et résultats
+
+## Import des données
+
+```{r}
+library(pmeasyr)
+p <- noyau_pmeasyr(
+        finess   = '750712184',
+        annee    = 2017,
+        mois     = 12,
+        path     = '~/Documents/data/mco',
+        progress = FALSE, 
+        tolower_names = TRUE,
+        n_max = 1e5, # ici pour l'exemple on ne lit que les 100 000 premières lignes
+        lib = FALSE)
+
+# Import des rsa
+rsa <- irsa(p, typi = 6)
+# Ajout du numéro administratif du séjour avec le fichier tra
+rsa$rsa <- inner_tra(rsa$rsa, itra(p))
+```
+
+**N.B.: Attention dans cette étape nous n'avons lu que les 100 000 premières lignes du fichier rsa (`n_max = 1e5`), il faut enlever ce paramètre du noyau de paramètres pour appliquer la méthode à l'ensemble des rsa.**
+
+## Éxécution des requêtes
+
+Avant d'éxécuter les requêtes on doit "préparer" l'objet `rsa` avec la fonction `prepare_rsa`.
+
+Pour chaque requête éxécutée son libellé est affiché.
+On choisit de garder les variables clé rsa (gardée par défaut), nas, duree, ghm, agean, agejr, actes et diags.
+
+```{r}
+rsa <- prepare_rsa(rsa)
+
+# Lancement des requêtes
+resultat <- lancer_requete(rsa, listes_re, vars = c('nas', 'duree', 'ghm', 'agean', 'agejr', 'actes', 'diags'))
+```
+
+La table `resultat` contient les séjours du Recours Exceptionnel 2017.
+
+On peut compter le nombre de séjours par type de recours (tous les résultats ont été fixés à 1 dans ce document `mutate(n = 1)`).
+
+```{r}
+count(resultat, Requete, sort = T) %>% 
+  mutate(n = 1) %>% 
+  knitr::kable()
+```
+
+
+## Classes d'âges pour les recours pédiatriques
+
+Pour certaines requêtes il reste à ventiler plus précisément le nombre de recours en fonction de l'âge du patient (pédiatrie), cette information est disponible dans la zone `commentaire` des listes de requêtes.
+
+
+```{r}
+# Quels sont les recours où le commentaire est non vide ?
+tibble(nom = purrr::map_chr(listes_re, "nom"),
+       commentaire = purrr::map(listes_re, "commentaire")) %>% 
+  filter(commentaire != "NULL") %>% 
+  knitr::kable()
+```
+
+
+On crée pour ces recours là une classe d'âge avec un `case_when` : 
+
+```{r}
+resultat_2 <- resultat %>% 
+  mutate(sujet_a_clage = (Requete %in% 
+                            c('Cathétérisme cardiaque interventionnel pédiatrique pour cardiopathies congénitales',
+                              'Chirurgie pédiatrique complexe pour cardiopathies congénitales')),
+             clage = case_when(
+              sujet_a_clage & !is.na(agean) & agejr <= 28            ~ '[0 - 28 jours]',
+              sujet_a_clage & !is.na(agejr) & agejr > 28 & agean < 1 ~ '[29 jours ; 1 an[',
+              sujet_a_clage & is.na(agejr) & agean >= 1 & agean <=5  ~ '[1 an ; 5 ans]',
+              sujet_a_clage & is.na(agejr) & agean > 5               ~ '[6 ans; 15 ans]',
+              TRUE                                                   ~ '')) %>% 
+  mutate(Requete = stringr::str_trim(paste(Requete, clage)))
+
+```
+
+Et on peut recompter le nombre de recours dans la table `resultat_2`.
