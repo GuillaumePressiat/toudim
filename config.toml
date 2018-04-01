@@ -1,5 +1,5 @@
 theme = "minimal"
-baseurl = "/"
+baseurl = "https://toudim.netlify.com/"
 languageCode = "fr-FR"
 title = "Et tout le touDIM"
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$", "\\.Rproj"]
