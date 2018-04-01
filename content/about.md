@@ -21,7 +21,7 @@ Les R projets en tant que tels sont accessibles dans [ce répertoire](https://gi
 <ul><h5><a href = 'https://github.com/GuillaumePressiat/toudim/tree/master/public/methodes'><i class="fa fa-file-code-o">&nbsp;</i>Répertoire Github contenant les projets présentés ici</a></h5></ul>
 <ul><h5><a href = 'https://github.com/IM-APHP/'><i class="fa fa-github">&nbsp;</i>Github  de l'Information Médicale AP-HP</a></h5></ul>
 <ul><h5><a href = 'https://guillaumepressiat.github.io'><i class="fa fa-leaf">&nbsp;</i>Lien vers le site de pmeasyr</a></h5></ul>
-
+<ul><h5><a href = 'http://toudim.netlify.com/index.xml'><i class="fa fa-rss">&nbsp;</i>S'abonner au flux RSS</a></h5></ul>
 <hr width = "100%">
 
 Ce site a été généré avec [Hugo](https://gohugo.io) en adaptant le thème [Minimal](https://github.com/calintat/minimal).

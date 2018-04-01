@@ -4,7 +4,8 @@ library(blogdown)
 new_site('')
 install_theme('calintat/minimal')
 
-serve_site()
-build_site()
 blogdown::hugo_build()
+serve_site()
+# build_site()
+
 zip( 'public.zip', files = 'public')
