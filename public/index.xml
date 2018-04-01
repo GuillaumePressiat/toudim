@@ -2,39 +2,39 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Et tout le touDIM</title>
-    <link>https://toudim.netlify.com/</link>
+    <link>/</link>
     <description>Recent content on Et tout le touDIM</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fr-FR</language>
     <lastBuildDate>Tue, 06 Mar 2018 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="https://toudim.netlify.com/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Recours Exceptionnel avec pmeasyr</title>
-      <link>https://toudim.netlify.com/projets/002---re/</link>
+      <link>/projets/002---re/</link>
       <pubDate>Tue, 06 Mar 2018 00:00:00 +0000</pubDate>
       
-      <guid>https://toudim.netlify.com/projets/002---re/</guid>
+      <guid>/projets/002---re/</guid>
       <description></description>
     </item>
     
     <item>
       <title>IPA avec pmeasyr</title>
-      <link>https://toudim.netlify.com/projets/001---ipa/</link>
+      <link>/projets/001---ipa/</link>
       <pubDate>Mon, 05 Mar 2018 00:00:00 +0000</pubDate>
       
-      <guid>https://toudim.netlify.com/projets/001---ipa/</guid>
+      <guid>/projets/001---ipa/</guid>
       <description></description>
     </item>
     
     <item>
       <title>À propos</title>
-      <link>https://toudim.netlify.com/about/</link>
+      <link>/about/</link>
       <pubDate>Mon, 05 Mar 2018 00:00:00 +0000</pubDate>
       
-      <guid>https://toudim.netlify.com/about/</guid>
+      <guid>/about/</guid>
       <description>Ce site rassemble des travaux faits avec R et pmeasyr dans le domaine de l&amp;rsquo;Information Médicale, à l&amp;rsquo;AP-HP.
 La structuration commune des données induite par le partage du package pmeasyr peut permettre de partager également les méthodes appliquées sur ces données dont certaines, utiles sinon pour tous, le seront au moins pour quelques uns.
 Les R projets en tant que tels sont accessibles dans ce répertoire, si vous souhaitez apporter un commentaire, une autre solution ou signaler un problème merci de le poster via Github sur ce répertoire (Issue, etc.</description>

@@ -3,63 +3,63 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://toudim.netlify.com/projets/002---re/</loc>
+    <loc>/projets/002---re/</loc>
     <lastmod>2018-03-06T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://toudim.netlify.com/projets/001---ipa/</loc>
+    <loc>/projets/001---ipa/</loc>
     <lastmod>2018-03-05T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://toudim.netlify.com/about/</loc>
+    <loc>/about/</loc>
     <lastmod>2018-03-05T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://toudim.netlify.com/tags/atih/</loc>
-    <lastmod>2018-03-05T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://toudim.netlify.com/categories/</loc>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://toudim.netlify.com/tags/dgos/</loc>
-    <lastmod>2018-03-06T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://toudim.netlify.com/</loc>
-    <lastmod>2018-03-06T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://toudim.netlify.com/tags/ipa/</loc>
+    <loc>/tags/atih/</loc>
     <lastmod>2018-03-05T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://toudim.netlify.com/projets/</loc>
+    <loc>/categories/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/dgos/</loc>
     <lastmod>2018-03-06T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://toudim.netlify.com/tags/recours-exceptionnel/</loc>
+    <loc>/</loc>
     <lastmod>2018-03-06T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://toudim.netlify.com/tags/</loc>
+    <loc>/tags/ipa/</loc>
+    <lastmod>2018-03-05T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/projets/</loc>
+    <lastmod>2018-03-06T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/recours-exceptionnel/</loc>
+    <lastmod>2018-03-06T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/</loc>
     <lastmod>2018-03-05T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
